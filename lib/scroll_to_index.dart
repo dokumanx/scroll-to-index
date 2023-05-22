@@ -307,8 +307,14 @@ mixin AutoScrollControllerMixin on ScrollController
         currentOffset = moveTarget;
         spentDuration += suggestedDuration ?? moveDuration;
         final oldOffset = offset;
-        await animateTo(currentOffset,
-            duration: suggestedDuration ?? moveDuration, curve: Curves.ease);
+
+        if (animateScroll) {
+          await animateTo(currentOffset,
+              duration: suggestedDuration ?? moveDuration, curve: Curves.ease);
+        } else {
+          jumpTo(currentOffset);
+        }
+
         await _waitForWidgetStateBuild();
         if (!hasClients || offset == oldOffset) {
           // already scroll to begin or end
@@ -325,9 +331,15 @@ mixin AutoScrollControllerMixin on ScrollController
           if (finalOffset != offset) {
             _isAutoScrolling = true;
             final remaining = duration - spentDuration;
-            await animateTo(finalOffset,
-                duration: remaining <= Duration.zero ? _millisecond : remaining,
-                curve: Curves.ease);
+            if (animateScroll) {
+              await animateTo(finalOffset,
+                  duration:
+                      remaining <= Duration.zero ? _millisecond : remaining,
+                  curve: Curves.ease);
+            } else {
+              jumpTo(finalOffset);
+            }
+
             await _waitForWidgetStateBuild();
 
             // not sure why it doesn't scroll to the given offset, try more within 3 times
@@ -336,8 +348,12 @@ mixin AutoScrollControllerMixin on ScrollController
               for (var i = 0;
                   i < count && hasClients && offset != finalOffset;
                   i++) {
-                await animateTo(finalOffset,
-                    duration: _millisecond, curve: Curves.ease);
+                if (animateScroll) {
+                  await animateTo(finalOffset,
+                      duration: _millisecond, curve: Curves.ease);
+                } else {
+                  jumpTo(finalOffset);
+                }
                 await _waitForWidgetStateBuild();
               }
             }
